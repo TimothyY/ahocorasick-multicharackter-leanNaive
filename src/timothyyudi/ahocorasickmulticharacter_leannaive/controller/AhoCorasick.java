@@ -48,7 +48,7 @@ public class AhoCorasick {
 	}
 	
 	public void prepareNaiveAlpha(){
-		root.setNextStateCollection(new HashMap<>());
+		root.setNextStateCollection(new HashMap<String,State>());
 		for (String printableASCII : printableASCIIList) {
 			root.getNextStateCollection().put(printableASCII, new State(printableASCII, root));
 		}
@@ -98,14 +98,23 @@ public class AhoCorasick {
 
 		//add naive omega
 		if(currState.getNextStateCollection()==null) {
-			currState.setNextStateCollection(new HashMap<>());
+			currState.setNextStateCollection(new HashMap<String,State>());
 		}
 		
-		currState.getNextStateCollection().putIfAbsent("", new State("", root));
-		currState.getNextStateCollection().putIfAbsent("\n", new State("\n", root));
-		currState.getNextStateCollection().putIfAbsent("\r", new State("\r", root));
+		if(currState.getNextStateCollection().get("")==null){
+			currState.getNextStateCollection().put("", new State("", root));
+		}
+		if(currState.getNextStateCollection().get("\n")==null){
+			currState.getNextStateCollection().put("\n", new State("\n", root));
+		}
+		if(currState.getNextStateCollection().get("\r")==null){
+			currState.getNextStateCollection().put("\r", new State("\r", root));
+		}
+		
 		for (int i = 32; i < 127; i++) {
-			currState.getNextStateCollection().putIfAbsent(Character.toString((char)i), new State(Character.toString((char)i), root));
+			if(currState.getNextStateCollection().get(Character.toString((char)i))==null){
+				currState.getNextStateCollection().put(Character.toString((char)i), new State(Character.toString((char)i), root));
+			}
 		}
 		
 //		System.out.println(currState.getNextStateCollection().size());
@@ -115,7 +124,7 @@ public class AhoCorasick {
 //		System.out.println("root child size: "+root.getNextStateCollection().size());
 		for (State rootChildState : root.getNextStateCollection().values()) {
 			if(rootChildState.getNextStateCollection()==null)rootChildState.setNextStateCollection(new HashMap<String,State>());
-			rootChildState.getNextStateCollection().putIfAbsent(initialCharacter, new State(initialCharacter, root));
+			if(rootChildState.getNextStateCollection().get(initialCharacter)==null)rootChildState.getNextStateCollection().put(initialCharacter, new State(initialCharacter, root));
 		}
 	}
 	
@@ -176,9 +185,9 @@ public class AhoCorasick {
 					if(stateNXiChilds!=null){//???
 						for (State stateNXj : stateNXiChilds.values()) {//BEGIN 5th phase//ada 2 node baru dengan multichar di queuetmpset
 							tempNewPattern = stateNXi.getStateContentCharacter()+stateNXj.getStateContentCharacter();
-							tempNextLiteratedStatePointerMap.putIfAbsent(tempNewPattern, stateNXj);
+							if(tempNextLiteratedStatePointerMap.get(tempNewPattern)==null)tempNextLiteratedStatePointerMap.put(tempNewPattern, stateNXj);
 							//implementasi fullKeywordHashCodeList pada state kedua
-							if(stateNXj.getFullKeywordHashCodeList()==null)stateNXj.setFullKeywordHashCodeList(new ArrayList<>());
+							if(stateNXj.getFullKeywordHashCodeList()==null)stateNXj.setFullKeywordHashCodeList(new ArrayList<Integer>());
 							stateNXj.getFullKeywordHashCodeList().add(stateNXi.getFullKeywordHashCode());
 							stateNXj.getFullKeywordHashCodeList().add(stateNXj.getFullKeywordHashCode());
 //							System.out.println(stateNXi.getStateContentCharacter()+": "+stateNXi.getNextStateCollection().size());
@@ -294,11 +303,11 @@ public class AhoCorasick {
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
 			while (bufferedReader.read(cBuf, 0, 2) != -1) {
 				sBuf = String.valueOf(cBuf);
-//				columnNumberCounter+=2;
-//				if(sBuf.contains("\n")){
-//					lineNumberCounter++;
-//					columnNumberCounter=1;
-//				}
+				columnNumberCounter+=2;
+				if(sBuf.contains("\n")){
+					lineNumberCounter++;
+					columnNumberCounter=1;
+				}
 //				System.out.println("ME SEARCH: "+sBuf+"@L"+lineNumberCounter+"C"+columnNumberCounter);
 				while (goTo(currState, sBuf)==null&&!currState.equals(root)) { //repeat fail function as long goTo function is failing
 					currState= failFrom(currState);
